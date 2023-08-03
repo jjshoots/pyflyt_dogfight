@@ -19,7 +19,7 @@ class DogfightEnv:
         damage_per_hit: float = 0.05,
         lethal_angle_radian: float = 0.1,
         lethal_offset: float = 0.15,
-        render: bool = False
+        render: bool = False,
     ):
         """__init__.
 
@@ -133,7 +133,9 @@ class DogfightEnv:
 
         return self.state, self.info
 
-    def step(self, actions) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, dict]:
+    def step(
+        self, actions
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, dict]:
         """step.
 
         Args:
@@ -165,8 +167,7 @@ class DogfightEnv:
         return self.state, self.reward, self.termination, self.truncation, self.info
 
     def compute_state(self):
-        """compute_state.
-        """
+        """compute_state."""
         # get the states of both drones
         self.attitudes = np.array(self.env.all_states)
 
@@ -220,11 +221,12 @@ class DogfightEnv:
         )
 
     def compute_term_trunc_reward(self):
-        """compute_term_trunc_reward.
-        """
+        """compute_term_trunc_reward."""
         collisions = self.env.contact_array.sum(axis=0) > 0.0
         collisions = collisions[np.array([d.Id for d in self.env.drones])]
-        out_of_bounds = np.linalg.norm(self.attitudes[:, -1], axis=-1) > self.flight_dome_size
+        out_of_bounds = (
+            np.linalg.norm(self.attitudes[:, -1], axis=-1) > self.flight_dome_size
+        )
 
         # terminate if out of bounds, no health, or collision
         self.termination |= out_of_bounds
@@ -233,6 +235,14 @@ class DogfightEnv:
 
         # truncation is just end
         self.truncation |= self.step_count > self.max_steps
+
+        # reward for getting closer to the apponent
+        self.reward += (
+            np.clip(
+                self.previous_distance - self.current_distance, a_min=0.0, a_max=None
+            )
+            * 1.0
+        )
 
         # reward for bringing the opponent closer to engagement
         self.reward += (
