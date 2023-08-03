@@ -265,13 +265,13 @@ class DogfightEnv:
         self.reward -= 20.0 * self.hits[::-1]
 
         # penalty for running out of health
-        self.reward -= 500 * (self.health <= 0.0)
+        self.reward -= 100 * (self.health <= 0.0)
 
         # penalty for crashing
-        self.reward -= 1000.0 * collisions
+        self.reward -= 400.0 * collisions
 
         # penalty for out of bounds
-        self.reward -= 1000.0 * out_of_bounds
+        self.reward -= 400.0 * out_of_bounds
 
         # all the info things
         self.info["out_of_bounds"] = out_of_bounds.any()
