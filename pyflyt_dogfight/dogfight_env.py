@@ -14,7 +14,7 @@ class DogfightEnv:
     def __init__(
         self,
         flight_dome_size: float = 100.0,
-        max_duration_seconds: float = 100.0,
+        max_duration_seconds: float = 50.0,
         agent_hz: int = 40,
         damage_per_hit: float = 0.05,
         lethal_angle_radian: float = 0.1,
