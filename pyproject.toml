@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyflyt_dogfight"
+version = "0.0.1"
+authors = [
+  { name="Jet", email="taijunjet@hotmail.com" },
+]
+description = "Dogfighting environment in PyFlyt"
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = ["numpy", "wheel", "pyflyt"]
+keywords = ["Machine Learning, Reinforement Learning, Aerial Combat"]
+license = { file="./LICENSE.txt" }
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["pyflyt_dogfight", "pyflyt_dogfight.*"]
+
+[project.urls]
+"Homepage" = "https://en.wikipedia.org/wiki/HTTP_404"
+
+[tool.setuptools.package-data]
+pyflyt_dogfight = ["**"]
