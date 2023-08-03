@@ -16,7 +16,7 @@ class DogfightEnv:
         flight_dome_size: float = 100.0,
         max_duration_seconds: float = 100.0,
         agent_hz: int = 40,
-        damage_per_hit: float = 0.1,
+        damage_per_hit: float = 0.05,
         lethal_angle_radian: float = 0.1,
         lethal_offset: float = 0.15,
         render: bool = False
@@ -253,6 +253,9 @@ class DogfightEnv:
 
         # penalty for being hit
         self.reward -= 20.0 * self.hits[::-1]
+
+        # penalty for running out of health
+        self.reward -= 500 * (self.health <= 0.0)
 
         # penalty for crashing
         self.reward -= 1000.0 * collisions
