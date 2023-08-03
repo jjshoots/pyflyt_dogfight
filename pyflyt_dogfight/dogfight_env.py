@@ -110,8 +110,8 @@ class DogfightEnv:
         # define all drone options
         drone_options = [dict(), dict()]
         for i in range(len(drone_options)):
-            drone_options[i]["model_dir"] = self.aggressor_filepath
-            drone_options[i]["drone_model"] = "aggressor"
+            # drone_options[i]["model_dir"] = self.aggressor_filepath
+            # drone_options[i]["drone_model"] = "aggressor"
             drone_options[i]["starting_velocity"] = start_vec[i]
 
         # start the environment
