@@ -15,7 +15,7 @@ class DogfightEnv:
         self,
         flight_dome_size: float = 100.0,
         max_duration_seconds: float = 50.0,
-        agent_hz: int = 40,
+        agent_hz: int = 30,
         damage_per_hit: float = 0.05,
         lethal_angle_radian: float = 0.1,
         lethal_offset: float = 0.15,
@@ -100,18 +100,20 @@ class DogfightEnv:
 
         # randomize starting position and orientation
         # constantly regenerate starting position if they are too close
-        start_pos = np.zeros((2, 3))
-        while np.linalg.norm(start_pos[0] - start_pos[1]) < self.flight_dome_size * 0.3:
-            start_pos = (np.random.rand(2, 3) - 0.5) * self.flight_dome_size
-            start_pos[:, -1] = np.clip(start_pos[:, -1], a_min=10.0, a_max=None)
-        start_orn = (np.random.rand(2, 3) - 0.5) * 2.0 * np.array([1.5, 1.0, 2 * np.pi])
+        # start_pos = np.zeros((2, 3))
+        # while np.linalg.norm(start_pos[0] - start_pos[1]) < self.flight_dome_size * 0.3:
+        #     start_pos = (np.random.rand(2, 3) - 0.5) * self.flight_dome_size
+        #     start_pos[:, -1] = np.clip(start_pos[:, -1], a_min=10.0, a_max=None)
+        # start_orn = (np.random.rand(2, 3) - 0.5) * 2.0 * np.array([1.5, 1.0, 2 * np.pi])
+        start_pos = np.array([[0.0, -5.0, 10.0], [0.0, 5.0, 10.0]])
+        start_orn = np.zeros_like(start_pos)
         start_vec = self.compute_forward_vec(start_orn) * 10.0
 
         # define all drone options
         drone_options = [dict(), dict()]
         for i in range(len(drone_options)):
-            # drone_options[i]["model_dir"] = self.aggressor_filepath
-            # drone_options[i]["drone_model"] = "aggressor"
+            drone_options[i]["model_dir"] = self.aggressor_filepath
+            drone_options[i]["drone_model"] = "aggressor"
             drone_options[i]["starting_velocity"] = start_vec[i]
 
         # start the environment
@@ -236,36 +238,39 @@ class DogfightEnv:
         # truncation is just end
         self.truncation |= self.step_count > self.max_steps
 
-        # reward for getting closer to the apponent
-        self.reward += (
-            np.clip(
-                self.previous_distance - self.current_distance, a_min=0.0, a_max=None
-            )
-            * 1.0
-        )
+        # reward for being alive for another step
+        self.reward += 0.2
 
-        # reward for bringing the opponent closer to engagement
-        self.reward += (
-            np.clip(self.previous_angles - self.current_angles, a_min=0.0, a_max=None)
-            * 10.0
-        )
-        self.reward += (
-            np.clip(self.previous_offsets - self.current_offsets, a_min=0.0, a_max=None)
-            * 1.0
-        )
+        # # reward for getting closer to the apponent
+        # self.reward += (
+        #     np.clip(
+        #         self.previous_distance - self.current_distance, a_min=0.0, a_max=None
+        #     )
+        #     * 1.0
+        # )
 
-        # reward for being close to bringing weapons to engagement
-        self.reward += 0.1 / (self.current_angles + 0.1)
-        self.reward += 0.1 / (self.current_offsets + 0.1)
+        # # reward for bringing the opponent closer to engagement
+        # self.reward += (
+        #     np.clip(self.previous_angles - self.current_angles, a_min=0.0, a_max=None)
+        #     * 10.0
+        # )
+        # self.reward += (
+        #     np.clip(self.previous_offsets - self.current_offsets, a_min=0.0, a_max=None)
+        #     * 1.0
+        # )
 
-        # reward for hits
-        self.reward += 20.0 * self.hits
+        # # reward for being close to bringing weapons to engagement
+        # self.reward += 0.1 / (self.current_angles + 0.01)
+        # self.reward += 0.1 / (self.current_offsets + 0.01)
 
-        # penalty for being hit
-        self.reward -= 20.0 * self.hits[::-1]
+        # # reward for hits
+        # self.reward += 20.0 * self.hits
 
-        # penalty for running out of health
-        self.reward -= 100 * (self.health <= 0.0)
+        # # penalty for being hit
+        # self.reward -= 20.0 * self.hits[::-1]
+
+        # # penalty for running out of health
+        # self.reward -= 100 * (self.health <= 0.0)
 
         # penalty for crashing
         self.reward -= 400.0 * collisions

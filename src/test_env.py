@@ -6,18 +6,17 @@ env = DogfightEnv(render=True)
 
 obs, info = env.reset()
 
-print(obs.shape)
-
 term, trunc = False, False
 
 while not (term or trunc):
-    actions = np.stack(
-        [env.action_space.sample() for _ in range(env.num_drones)], axis=0
-    )
+    actions = np.zeros((2, 4))
+    actions[:, -1] = 1.0
+    actions[0, 1] = -1.0
+    actions[1, 1] = -1.0
     obs, rew, term, trunc, info = env.step(actions)
-    print(rew)
     term = term.any()
     trunc = trunc.any()
+    print(rew)
 
 
 print(info)
