@@ -13,8 +13,8 @@ class DogfightEnv:
 
     def __init__(
         self,
-        flight_dome_size: float = 100.0,
-        max_duration_seconds: float = 50.0,
+        flight_dome_size: float = 250.0,
+        max_duration_seconds: float = 60.0,
         agent_hz: int = 30,
         damage_per_hit: float = 0.05,
         lethal_angle_radian: float = 0.1,
@@ -208,6 +208,7 @@ class DogfightEnv:
         # opponent attitude is relative to ours
         attitude = np.reshape(self.attitudes, (2, -1))
         opponent_attitude = attitude[::-1] - attitude
+        opponent_attitude *= 0.0
 
         # form the state vector
         health = np.expand_dims(self.health, axis=-1)
@@ -273,10 +274,10 @@ class DogfightEnv:
         # self.reward -= 100 * (self.health <= 0.0)
 
         # penalty for crashing
-        self.reward -= 400.0 * collisions
+        self.reward -= 100.0 * collisions
 
         # penalty for out of bounds
-        self.reward -= 400.0 * out_of_bounds
+        self.reward -= 100.0 * out_of_bounds
 
         # all the info things
         self.info["out_of_bounds"] = out_of_bounds.any()
