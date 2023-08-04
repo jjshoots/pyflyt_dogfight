@@ -237,18 +237,19 @@ class DogfightEnv:
         # truncation is just end
         self.truncation |= self.step_count > self.max_steps
 
-        # # reward for getting closer to the apponent
-        # self.reward += (
-        #     np.clip(
-        #         self.previous_distance - self.current_distance, a_min=0.0, a_max=None
-        #     )
-        #     * 1.0
-        # )
+        # reward for getting closer to the apponent
+        self.reward += (
+            np.clip(
+                self.previous_distance - self.current_distance, a_min=0.0, a_max=None
+            )
+            * (self.current_distance > 15.0)
+            * 1.0
+        )
 
         # reward for bringing the opponent closer to engagement
         self.reward += (
             np.clip(self.previous_angles - self.current_angles, a_min=0.0, a_max=None)
-            * 10.0
+            * 1.0
         )
         self.reward += (
             np.clip(self.previous_offsets - self.current_offsets, a_min=0.0, a_max=None)
@@ -260,13 +261,13 @@ class DogfightEnv:
         self.reward += 0.1 / (self.current_offsets + 0.01)
 
         # reward for hits
-        self.reward += 20.0 * self.hits
+        self.reward += 50.0 * self.hits
 
         # penalty for being hit
-        self.reward -= 20.0 * self.hits[::-1]
+        self.reward -= 50.0 * self.hits[::-1]
 
         # penalty for running out of health
-        self.reward -= 100 * (self.health <= 0.0)
+        self.reward -= 300 * (self.health <= 0.0)
 
         # penalty for crashing
         self.reward -= 1000.0 * collisions
