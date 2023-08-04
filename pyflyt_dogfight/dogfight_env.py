@@ -16,7 +16,7 @@ class DogfightEnv:
         flight_dome_size: float = 250.0,
         max_duration_seconds: float = 60.0,
         agent_hz: int = 30,
-        damage_per_hit: float = 0.05,
+        damage_per_hit: float = 0.01,
         lethal_angle_radian: float = 0.1,
         lethal_offset: float = 0.15,
         render: bool = False,
@@ -273,6 +273,9 @@ class DogfightEnv:
 
         # penalty for out of bounds
         self.reward -= 1000.0 * out_of_bounds
+
+        # time penalty
+        self.reward -= 1.0
 
         # all the info things
         self.info["out_of_bounds"] = out_of_bounds
