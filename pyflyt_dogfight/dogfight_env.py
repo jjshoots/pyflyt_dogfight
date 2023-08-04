@@ -102,9 +102,9 @@ class DogfightEnv:
         # constantly regenerate starting position if they are too close
         start_pos = np.zeros((2, 3))
         while np.linalg.norm(start_pos[0] - start_pos[1]) < self.flight_dome_size * 0.2:
-            start_pos = (np.random.rand(2, 3) - 0.5) * self.flight_dome_size
-            start_pos[:, -1] = np.clip(start_pos[:, -1], a_min=10.0, a_max=None)
-        start_orn = (np.random.rand(2, 3) - 0.5) * 2.0 * np.array([1.5, 1.0, 2 * np.pi])
+            start_pos = (np.random.rand(2, 3) - 0.5) * self.flight_dome_size * 0.5
+            start_pos[:, -1] = np.clip(start_pos[:, -1], a_min=15.0, a_max=None)
+        start_orn = (np.random.rand(2, 3) - 0.5) * 2.0 * np.array([1.0, 1.0, 2 * np.pi])
         start_vec = self.compute_forward_vec(start_orn) * 10.0
 
         # define all drone options
