@@ -279,8 +279,8 @@ class DogfightEnv:
         self.reward += (
             (self.previous_distance - self.current_distance) * (~is_lethal) * 5.0
         )
-        self.reward += (self.previous_angles - self.current_angles) * is_lethal * 5.0
-        self.reward += (self.previous_offsets - self.current_offsets) * is_lethal * 5.0
+        self.reward += (self.previous_angles - self.current_angles) * is_lethal * 10.0
+        self.reward += (self.previous_offsets - self.current_offsets) * is_lethal * 10.0
 
         # reward for being close to engagement
         self.reward += 0.1 / (self.current_angles + 0.01) * is_lethal
