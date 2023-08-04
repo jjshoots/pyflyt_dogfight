@@ -254,14 +254,14 @@ class DogfightEnv:
         self.reward += (self.previous_offsets - self.current_offsets) * 5.0
 
         # reward for being close to bringing weapons to engagement
-        self.reward += 0.1 / (self.current_angles + 0.01)
-        self.reward += 0.1 / (self.current_offsets + 0.01)
+        self.reward += 0.1 / (self.current_angles + 0.02)
+        self.reward += 0.1 / (self.current_offsets + 0.02)
 
         # reward for hits
-        self.reward += 20.0 * self.hits
+        self.reward += 10.0 * self.hits
 
         # penalty for being hit
-        self.reward -= 20.0 * self.hits[::-1]
+        self.reward -= 10.0 * self.hits[::-1]
 
         # penalty for crashing
         self.reward -= 1000.0 * collisions
