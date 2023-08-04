@@ -230,6 +230,7 @@ class DogfightEnv:
         out_of_bounds = (
             np.linalg.norm(self.attitudes[:, -1], axis=-1) > self.flight_dome_size
         )
+        out_of_bounds |= self.attitudes[:, -1, -1] <= 0.0
 
         # terminate if out of bounds, no health, or collision
         self.termination |= out_of_bounds
@@ -280,8 +281,8 @@ class DogfightEnv:
         self.reward -= 100.0 * out_of_bounds
 
         # all the info things
-        self.info["out_of_bounds"] = out_of_bounds.any()
-        self.info["collision"] = collisions.any()
+        self.info["out_of_bounds"] = out_of_bounds
+        self.info["collision"] = collisions
         self.info["d1_win"] = self.health[1] <= 0.0
         self.info["d2_win"] = self.health[1] <= 0.0
         self.info["healths"] = np.ones((2))
