@@ -17,6 +17,8 @@ class DogfightEnv:
         max_duration_seconds: float = 60.0,
         agent_hz: int = 30,
         damage_per_hit: float = 0.01,
+        spawn_height: float = 20.0,
+        lethal_distance: float = 15.0,
         lethal_angle_radian: float = 0.1,
         lethal_offset: float = 0.15,
         render: bool = False,
@@ -59,6 +61,8 @@ class DogfightEnv:
         self.aggressor_filepath = path.join(path.dirname(__file__), "./models")
 
         self.damage_per_hit = damage_per_hit
+        self.spawn_height = spawn_height
+        self.lethal_distance = lethal_distance
         self.lethal_angle = lethal_angle_radian
         self.lethal_offset = lethal_offset
 
@@ -100,10 +104,11 @@ class DogfightEnv:
 
         # randomize starting position and orientation
         # constantly regenerate starting position if they are too close
+        # fix height to 20 meters
         start_pos = np.zeros((2, 3))
         while np.linalg.norm(start_pos[0] - start_pos[1]) < self.flight_dome_size * 0.2:
             start_pos = (np.random.rand(2, 3) - 0.5) * self.flight_dome_size * 0.5
-            start_pos[:, -1] = np.clip(start_pos[:, -1], a_min=15.0, a_max=None)
+            start_pos[:, -1] = self.spawn_height
         start_orn = (np.random.rand(2, 3) - 0.5) * 2.0 * np.array([1.0, 1.0, 2 * np.pi])
         start_vec = self.compute_forward_vec(start_orn) * 10.0
 
@@ -198,6 +203,7 @@ class DogfightEnv:
         # compute whether anyone hit anyone
         self.hits = self.current_angles < self.lethal_angle
         self.hits &= self.current_offsets < self.lethal_offset
+        self.hits &= self.current_distance < self.lethal_distance
 
         # update health based on hits
         self.health -= self.damage_per_hit * self.hits[::-1]
@@ -254,14 +260,14 @@ class DogfightEnv:
         self.reward += (self.previous_offsets - self.current_offsets) * 5.0
 
         # reward for being close to bringing weapons to engagement
-        self.reward += 0.1 / (self.current_angles + 0.02)
-        self.reward += 0.1 / (self.current_offsets + 0.02)
+        self.reward += 0.1 / (self.current_angles + 0.03)
+        self.reward += 0.1 / (self.current_offsets + 0.03)
 
         # reward for hits
-        self.reward += 10.0 * self.hits
+        self.reward += 5.0 * self.hits
 
         # penalty for being hit
-        self.reward -= 10.0 * self.hits[::-1]
+        self.reward -= 5.0 * self.hits[::-1]
 
         # penalty for crashing
         self.reward -= 1000.0 * collisions
