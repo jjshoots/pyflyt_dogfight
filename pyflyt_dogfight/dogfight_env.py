@@ -243,6 +243,9 @@ class DogfightEnv:
         # truncation is just end
         self.truncation |= self.step_count > self.max_steps
 
+        # whether we're in the lethal range
+        is_lethal = self.current_distance < self.lethal_distance
+
         # reward being alive
         self.reward += 0.3
 
@@ -251,17 +254,17 @@ class DogfightEnv:
             np.clip(
                 self.previous_distance - self.current_distance, a_min=0.0, a_max=None
             )
-            * (self.current_distance > self.lethal_distance)
-            * 3.0
+            * (not is_lethal)
+            * 5.0
         )
 
         # reward for bringing the opponent closer to engagement
-        self.reward += (self.previous_angles - self.current_angles) * 5.0
-        self.reward += (self.previous_offsets - self.current_offsets) * 5.0
+        self.reward += (self.previous_angles - self.current_angles) * is_lethal * 5.0
+        self.reward += (self.previous_offsets - self.current_offsets) * is_lethal * 5.0
 
         # reward for being close to bringing weapons to engagement
-        self.reward += 0.1 / (self.current_angles + 0.03)
-        self.reward += 0.1 / (self.current_offsets + 0.03)
+        self.reward += 0.1 / (self.current_angles + 0.01) * is_lethal
+        self.reward += 0.1 / (self.current_offsets + 0.01) * is_lethal
 
         # reward for hits
         self.reward += 5.0 * self.hits
