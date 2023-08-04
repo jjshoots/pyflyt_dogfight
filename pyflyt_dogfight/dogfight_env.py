@@ -105,12 +105,17 @@ class DogfightEnv:
         # randomize starting position and orientation
         # constantly regenerate starting position if they are too close
         # fix height to 20 meters
-        start_pos = np.zeros((2, 3))
-        while np.linalg.norm(start_pos[0] - start_pos[1]) < self.flight_dome_size * 0.2:
-            start_pos = (np.random.rand(2, 3) - 0.5) * self.flight_dome_size * 0.5
-            start_pos[:, -1] = self.spawn_height
-        start_orn = (np.random.rand(2, 3) - 0.5) * 2.0 * np.array([1.0, 1.0, 2 * np.pi])
-        start_vec = self.compute_forward_vec(start_orn) * 10.0
+        # start_pos = np.zeros((2, 3))
+        # while np.linalg.norm(start_pos[0] - start_pos[1]) < self.flight_dome_size * 0.2:
+        #     start_pos = (np.random.rand(2, 3) - 0.5) * self.flight_dome_size * 0.5
+        #     start_pos[:, -1] = self.spawn_height
+        # start_orn = (np.random.rand(2, 3) - 0.5) * 2.0 * np.array([1.0, 1.0, 2 * np.pi])
+        start_pos = np.array([[0, 0, 5], [5, 5, 10]])
+        start_orn = np.zeros_like(start_pos)
+        start_orn[1, -1] = np.pi
+        start_orn[1, 0] = np.pi / 2
+        _, start_vec = self.compute_rotation_forward(start_orn)
+        start_vec *= 10.0
 
         # define all drone options
         drone_options = [dict(), dict()]
@@ -177,14 +182,13 @@ class DogfightEnv:
         self.attitudes = np.array(self.env.all_states)
 
         """COMPUTE HITS"""
-        # get the positions, orientations, and forward vectors
+        # get the rotation matrices and forward vectors
         # offset the position to be on top of the main wing
-        orientations, positions = self.attitudes[:, 1], self.attitudes[:, -1]
-        forward_vecs = self.compute_forward_vec(orientations)
-        positions -= forward_vecs * 0.35
+        rotation, forward_vecs = self.compute_rotation_forward(self.attitudes[:, 1])
+        self.attitudes[:, -1] -= forward_vecs * 0.35
 
         # compute the vectors of each drone to each drone
-        separation = positions[::-1] - positions
+        separation = self.attitudes[::-1, -1] - self.attitudes[:, -1]
         self.previous_distance = self.current_distance.copy()
         self.current_distance = np.linalg.norm(separation[0])
 
@@ -209,17 +213,40 @@ class DogfightEnv:
         self.health -= self.damage_per_hit * self.hits[::-1]
 
         """COMPUTE THE STATE VECTOR"""
-        # opponent attitude is relative to ours
-        attitude = np.reshape(self.attitudes, (self.env.num_drones, -1))
-        opponent_attitude = attitude[::-1] - attitude
+        # form the opponent state matrix
+        opponent_attitudes = np.zeros_like(self.attitudes)
+
+        # opponent angular rate is unchanged
+        opponent_attitudes[:, 0] = self.attitudes[::-1, 0]
+
+        # oponent angular position is relative to ours
+        opponent_attitudes[:, 1] = self.attitudes[::-1, 1] - self.attitudes[:, 1]
+
+        # opponent velocity is relative to ours in our body frame
+        ground_velocities = (
+            rotation @ np.expand_dims(self.attitudes[:, -2], axis=-1)
+        ).reshape(2, 3)
+        opponent_velocities = (
+            np.expand_dims(ground_velocities, axis=1)[::-1] @ rotation
+        ).reshape(2, 3)
+        opponent_attitudes[:, 2] = opponent_velocities - self.attitudes[:, 2]
+
+        # opponent position is relative to ours in our body frame
+        opponent_attitudes[:, 3] = (
+            np.expand_dims(separation, axis=1) @ rotation
+        ).reshape(2, 3)
+
+        # flatten the attitude and opponent attitude, expand dim of health
+        flat_attitude = self.attitudes.reshape(2, -1)
+        flat_opponent_attitude = opponent_attitudes.reshape(2, -1)
+        health = np.expand_dims(self.health, axis=-1)
 
         # form the state vector
-        health = np.expand_dims(self.health, axis=-1)
         self.state = np.concatenate(
             [
-                attitude,
+                flat_attitude,
                 health,
-                opponent_attitude,
+                flat_opponent_attitude,
                 health[::-1],
                 self.prev_actions,
             ],
@@ -286,22 +313,38 @@ class DogfightEnv:
         self.info["healths"] = np.ones((2))
 
     @staticmethod
-    def compute_forward_vec(orn: np.ndarray) -> np.ndarray:
-        """compute_forward_vec.
+    def compute_rotation_forward(orn: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+        """Computes the rotation matrix and forward vector of an aircraft given its orientation.
 
         Args:
             orn (np.ndarray): an [n, 3] array of each drone's orientation
 
         Returns:
-            np.ndarray: an [n, 3] array of each drone's forward vector
+            np.ndarray: an [n, 3, 3] rotation matrix of each aircraft
+            np.ndarray: an [n, 3] forward vector of each aircraft
         """
-        # computes a forward vector given an orientation
         c, s = np.cos(orn), np.sin(orn)
-        # c_phi = c[..., 1]
-        # s_phi = s[..., 1]
-        # c_psi = c[..., 2]
-        # s_psi = s[..., 2]
+        eye = np.stack([np.eye(3)] * orn.shape[0], axis=0)
 
-        return np.stack(
+        rx = eye.copy()
+        rx[:, 1, 1] = c[..., 0]
+        rx[:, 1, 2] = -s[..., 0]
+        rx[:, 2, 1] = s[..., 0]
+        rx[:, 2, 2] = c[..., 0]
+        ry = eye.copy()
+        ry[:, 0, 0] = c[..., 1]
+        ry[:, 0, 2] = s[..., 1]
+        ry[:, 2, 0] = -s[..., 1]
+        ry[:, 2, 2] = c[..., 1]
+        rz = eye.copy()
+        rz[:, 0, 0] = c[..., 2]
+        rz[:, 0, 1] = -s[..., 2]
+        rz[:, 1, 0] = s[..., 2]
+        rz[:, 1, 1] = c[..., 2]
+
+        forward_vector = np.stack(
             [c[..., 2] * c[..., 1], s[..., 2] * c[..., 1], -s[..., 1]], axis=-1
         )
+
+        # order of operations for multiplication matters here
+        return rz @ ry @ rx, forward_vector
