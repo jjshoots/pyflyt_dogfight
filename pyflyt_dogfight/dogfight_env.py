@@ -251,7 +251,7 @@ class DogfightEnv:
             np.clip(
                 self.previous_distance - self.current_distance, a_min=0.0, a_max=None
             )
-            * (self.current_distance > 15.0)
+            * (self.current_distance > self.lethal_distance)
             * 3.0
         )
 
