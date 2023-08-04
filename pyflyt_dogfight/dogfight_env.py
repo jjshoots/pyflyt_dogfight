@@ -246,12 +246,12 @@ class DogfightEnv:
                 self.previous_distance - self.current_distance, a_min=0.0, a_max=None
             )
             * (self.current_distance > 15.0)
-            * 1.0
+            * 3.0
         )
 
         # reward for bringing the opponent closer to engagement
-        self.reward += (self.previous_angles - self.current_angles) * 1.0
-        self.reward += (self.previous_offsets - self.current_offsets) * 1.0
+        self.reward += (self.previous_angles - self.current_angles) * 5.0
+        self.reward += (self.previous_offsets - self.current_offsets) * 5.0
 
         # reward for being close to bringing weapons to engagement
         self.reward += 0.1 / (self.current_angles + 0.01)
