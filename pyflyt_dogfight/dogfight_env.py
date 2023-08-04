@@ -100,13 +100,11 @@ class DogfightEnv:
 
         # randomize starting position and orientation
         # constantly regenerate starting position if they are too close
-        # start_pos = np.zeros((2, 3))
-        # while np.linalg.norm(start_pos[0] - start_pos[1]) < self.flight_dome_size * 0.3:
-        #     start_pos = (np.random.rand(2, 3) - 0.5) * self.flight_dome_size
-        #     start_pos[:, -1] = np.clip(start_pos[:, -1], a_min=10.0, a_max=None)
-        # start_orn = (np.random.rand(2, 3) - 0.5) * 2.0 * np.array([1.5, 1.0, 2 * np.pi])
-        start_pos = np.array([[0.0, -5.0, 10.0], [0.0, 5.0, 10.0]])
-        start_orn = np.zeros_like(start_pos)
+        start_pos = np.zeros((2, 3))
+        while np.linalg.norm(start_pos[0] - start_pos[1]) < self.flight_dome_size * 0.3:
+            start_pos = (np.random.rand(2, 3) - 0.5) * self.flight_dome_size
+            start_pos[:, -1] = np.clip(start_pos[:, -1], a_min=10.0, a_max=None)
+        start_orn = (np.random.rand(2, 3) - 0.5) * 2.0 * np.array([1.5, 1.0, 2 * np.pi])
         start_vec = self.compute_forward_vec(start_orn) * 10.0
 
         # define all drone options
@@ -206,9 +204,8 @@ class DogfightEnv:
 
         """COMPUTE THE STATE VECTOR"""
         # opponent attitude is relative to ours
-        attitude = np.reshape(self.attitudes, (2, -1))
+        attitude = np.reshape(self.attitudes, (self.env.num_drones, -1))
         opponent_attitude = attitude[::-1] - attitude
-        opponent_attitude *= 0.0
 
         # form the state vector
         health = np.expand_dims(self.health, axis=-1)
@@ -240,9 +237,6 @@ class DogfightEnv:
         # truncation is just end
         self.truncation |= self.step_count > self.max_steps
 
-        # reward for being alive for another step
-        self.reward += 0.2
-
         # # reward for getting closer to the apponent
         # self.reward += (
         #     np.clip(
@@ -251,34 +245,34 @@ class DogfightEnv:
         #     * 1.0
         # )
 
-        # # reward for bringing the opponent closer to engagement
-        # self.reward += (
-        #     np.clip(self.previous_angles - self.current_angles, a_min=0.0, a_max=None)
-        #     * 10.0
-        # )
-        # self.reward += (
-        #     np.clip(self.previous_offsets - self.current_offsets, a_min=0.0, a_max=None)
-        #     * 1.0
-        # )
+        # reward for bringing the opponent closer to engagement
+        self.reward += (
+            np.clip(self.previous_angles - self.current_angles, a_min=0.0, a_max=None)
+            * 10.0
+        )
+        self.reward += (
+            np.clip(self.previous_offsets - self.current_offsets, a_min=0.0, a_max=None)
+            * 1.0
+        )
 
-        # # reward for being close to bringing weapons to engagement
-        # self.reward += 0.1 / (self.current_angles + 0.01)
-        # self.reward += 0.1 / (self.current_offsets + 0.01)
+        # reward for being close to bringing weapons to engagement
+        self.reward += 0.1 / (self.current_angles + 0.01)
+        self.reward += 0.1 / (self.current_offsets + 0.01)
 
-        # # reward for hits
-        # self.reward += 20.0 * self.hits
+        # reward for hits
+        self.reward += 20.0 * self.hits
 
-        # # penalty for being hit
-        # self.reward -= 20.0 * self.hits[::-1]
+        # penalty for being hit
+        self.reward -= 20.0 * self.hits[::-1]
 
-        # # penalty for running out of health
-        # self.reward -= 100 * (self.health <= 0.0)
+        # penalty for running out of health
+        self.reward -= 100 * (self.health <= 0.0)
 
         # penalty for crashing
-        self.reward -= 100.0 * collisions
+        self.reward -= 1000.0 * collisions
 
         # penalty for out of bounds
-        self.reward -= 100.0 * out_of_bounds
+        self.reward -= 1000.0 * out_of_bounds
 
         # all the info things
         self.info["out_of_bounds"] = out_of_bounds
