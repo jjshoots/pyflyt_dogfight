@@ -101,7 +101,7 @@ class DogfightEnv:
         # randomize starting position and orientation
         # constantly regenerate starting position if they are too close
         start_pos = np.zeros((2, 3))
-        while np.linalg.norm(start_pos[0] - start_pos[1]) < self.flight_dome_size * 0.3:
+        while np.linalg.norm(start_pos[0] - start_pos[1]) < self.flight_dome_size * 0.2:
             start_pos = (np.random.rand(2, 3) - 0.5) * self.flight_dome_size
             start_pos[:, -1] = np.clip(start_pos[:, -1], a_min=10.0, a_max=None)
         start_orn = (np.random.rand(2, 3) - 0.5) * 2.0 * np.array([1.5, 1.0, 2 * np.pi])
@@ -237,6 +237,9 @@ class DogfightEnv:
         # truncation is just end
         self.truncation |= self.step_count > self.max_steps
 
+        # reward being alive
+        self.reward += 0.3
+
         # reward for getting closer to the apponent
         self.reward += (
             np.clip(
@@ -265,9 +268,6 @@ class DogfightEnv:
 
         # penalty for out of bounds
         self.reward -= 1000.0 * out_of_bounds
-
-        # time penalty
-        self.reward -= 1.0
 
         # all the info things
         self.info["out_of_bounds"] = out_of_bounds
