@@ -105,15 +105,17 @@ class DogfightEnv:
         # randomize starting position and orientation
         # constantly regenerate starting position if they are too close
         # fix height to 20 meters
-        # start_pos = np.zeros((2, 3))
-        # while np.linalg.norm(start_pos[0] - start_pos[1]) < self.flight_dome_size * 0.2:
-        #     start_pos = (np.random.rand(2, 3) - 0.5) * self.flight_dome_size * 0.5
-        #     start_pos[:, -1] = self.spawn_height
-        # start_orn = (np.random.rand(2, 3) - 0.5) * 2.0 * np.array([1.0, 1.0, 2 * np.pi])
-        start_pos = np.array([[0, 0, 5], [5, 5, 10]])
-        start_orn = np.zeros_like(start_pos)
-        start_orn[1, -1] = np.pi
-        start_orn[1, 0] = np.pi / 2
+        start_pos = np.zeros((2, 3))
+        while np.linalg.norm(start_pos[0] - start_pos[1]) < self.flight_dome_size * 0.2:
+            start_pos = (np.random.rand(2, 3) - 0.5) * self.flight_dome_size * 0.5
+            start_pos[:, -1] = self.spawn_height
+        start_orn = (np.random.rand(2, 3) - 0.5) * 2.0 * np.array([1.0, 1.0, 2 * np.pi])
+
+        # start_pos = np.array([[0, 0, 5], [5, 5, 10]])
+        # start_orn = np.zeros_like(start_pos)
+        # start_orn[1, -1] = np.pi
+        # start_orn[1, 0] = np.pi / 2
+
         _, start_vec = self.compute_rotation_forward(start_orn)
         start_vec *= 10.0
 
@@ -273,16 +275,10 @@ class DogfightEnv:
         # whether we're in the lethal range
         is_lethal = self.current_distance < self.lethal_distance
 
-        # reward for getting closer to the apponent
-        self.reward += (
-            np.clip(
-                self.previous_distance - self.current_distance, a_min=0.0, a_max=None
-            )
-            * (not is_lethal)
-            * 5.0
-        )
-
         # reward for progressing to engagement
+        self.reward += (
+            (self.previous_distance - self.current_distance) * (~is_lethal) * 5.0
+        )
         self.reward += (self.previous_angles - self.current_angles) * is_lethal * 5.0
         self.reward += (self.previous_offsets - self.current_offsets) * is_lethal * 5.0
 
