@@ -277,7 +277,11 @@ class DogfightEnv:
 
         # reward for progressing to engagement
         self.reward += (
-            (self.previous_distance - self.current_distance) * (~is_lethal) * 5.0
+            np.clip(
+                self.previous_distance - self.current_distance, a_min=0.0, a_max=None
+            )
+            * (~is_lethal)
+            * 2.0
         )
         self.reward += (self.previous_angles - self.current_angles) * is_lethal * 10.0
         self.reward += (self.previous_offsets - self.current_offsets) * is_lethal * 10.0
