@@ -13,10 +13,10 @@ term, trunc = False, False
 i = 0
 while not (term or trunc):
     i += 1
-    actions = np.zeros((2, 4))
+    actions = np.zeros((2, 6))
     actions[:, -1] = 1.0
-    actions[0, 1] = -1.0
-    actions[1, 1] = -1.0
+    actions[:, 2] = -1.0
+    actions[:, 4] = -1.0
     obs, rew, term, trunc, info = env.step(actions)
     term = term.any()
     trunc = trunc.any()

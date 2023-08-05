@@ -296,7 +296,7 @@ class DogfightEnv:
         engagement_reward = 1.0 / (self.current_angles + 0.05) * is_lethal
         engagement_reward += 1.0 / (self.current_offsets + 0.05) * is_lethal
         self.reward += engagement_reward
-        self.reward -= engagement_reward[::-1]
+        # self.reward -= engagement_reward[::-1]
 
         # reward for hits
         self.reward += 5.0 * self.hits
