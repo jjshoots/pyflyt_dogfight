@@ -16,10 +16,10 @@ class DogfightEnv:
         flight_dome_size: float = 100.0,
         max_duration_seconds: float = 60.0,
         agent_hz: int = 30,
-        damage_per_hit: float = 0.01,
+        damage_per_hit: float = 0.02,
         spawn_height: float = 20.0,
         lethal_distance: float = 15.0,
-        lethal_angle_radian: float = 0.1,
+        lethal_angle_radian: float = 0.2,
         lethal_offset: float = 0.15,
         render: bool = False,
     ):
@@ -47,8 +47,8 @@ class DogfightEnv:
             low=-np.inf, high=np.inf, shape=(2 * state_shape + action_shape,)
         )
 
-        high = np.array([1.0, 1.0, 1.0, 1.0])
-        low = np.array([-1.0, -1.0, -1.0, 0.0])
+        high = np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
+        low = np.array([-1.0, -1.0, -1.0, -1.0, -1.0, 0.0])
         self.action_space = spaces.Box(low=low, high=high, dtype=np.float64)
 
         """CONSTANTS"""
@@ -142,7 +142,7 @@ class DogfightEnv:
 
         # set flight mode and register all bodies
         self.env.register_all_new_bodies()
-        self.env.set_mode(0)
+        self.env.set_mode(-1)
 
         # wait for env to stabilize
         for _ in range(3):
@@ -291,9 +291,11 @@ class DogfightEnv:
         self.reward += (self.previous_angles - self.current_angles) * is_lethal * 10.0
         self.reward += (self.previous_offsets - self.current_offsets) * is_lethal * 10.0
 
-        # reward for being close to engagement
-        self.reward += 1.0 / (self.current_angles + 0.05) * is_lethal
-        self.reward += 1.0 / (self.current_offsets + 0.05) * is_lethal
+        # reward and penalty for engaging and being engaged
+        engagement_reward = 1.0 / (self.current_angles + 0.05) * is_lethal
+        engagement_reward += 1.0 / (self.current_offsets + 0.05) * is_lethal
+        self.reward += engagement_reward
+        self.reward -= engagement_reward[::-1]
 
         # reward for hits
         self.reward += 5.0 * self.hits
@@ -302,17 +304,16 @@ class DogfightEnv:
         self.reward -= 5.0 * self.hits[::-1]
 
         # penalty for crashing
-        self.reward -= 1000.0 * collisions
+        self.reward -= 3000.0 * collisions
 
         # penalty for out of bounds
-        self.reward -= 1000.0 * out_of_bounds
+        self.reward -= 3000.0 * out_of_bounds
 
         # all the info things
         self.info["out_of_bounds"] = out_of_bounds
         self.info["collision"] = collisions
-        self.info["d1_win"] = self.health[1] <= 0.0
-        self.info["d2_win"] = self.health[1] <= 0.0
-        self.info["healths"] = np.ones((2))
+        self.info["wins"] = self.health <= 0.0
+        self.info["healths"] = self.health
 
     def render(self) -> np.ndarray:
         _, _, rgbaImg, _, _ = self.env.getCameraImage(
@@ -322,12 +323,9 @@ class DogfightEnv:
             projectionMatrix=self.env.drones[0].camera.proj_mat,
         )
 
-        rgbaImg = np.asarray(rgbaImg).reshape(
-        720, 1280, -1
-        )
+        rgbaImg = np.asarray(rgbaImg).reshape(720, 1280, -1)
 
         return rgbaImg
-
 
     @staticmethod
     def compute_rotation_forward(orn: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
@@ -365,4 +363,3 @@ class DogfightEnv:
 
         # order of operations for multiplication matters here
         return rz @ ry @ rx, forward_vector
-
