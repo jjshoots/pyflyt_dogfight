@@ -54,7 +54,7 @@ class DogfightEnv:
         """CONSTANTS"""
         self.env: Aviary
         self.num_drones = 2
-        self.render = render
+        self.to_render = render
         self.max_steps = int(agent_hz * max_duration_seconds)
         self.env_step_ratio = int(120 / agent_hz)
         self.flight_dome_size = flight_dome_size
@@ -125,15 +125,20 @@ class DogfightEnv:
             drone_options[i]["model_dir"] = self.aggressor_filepath
             drone_options[i]["drone_model"] = "aggressor"
             drone_options[i]["starting_velocity"] = start_vec[i]
+        drone_options[0]["use_camera"] = self.to_render
 
         # start the environment
         self.env = Aviary(
             start_pos=start_pos,
             start_orn=start_orn,
-            render=self.render,
+            render=self.to_render,
             drone_type="fixedwing",
             drone_options=drone_options,
         )
+
+        # render settings
+        if self.to_render:
+            self.env.drones[0].camera.camera_position_offset = [-10, 0, 5]
 
         # set flight mode and register all bodies
         self.env.register_all_new_bodies()
@@ -309,6 +314,21 @@ class DogfightEnv:
         self.info["d2_win"] = self.health[1] <= 0.0
         self.info["healths"] = np.ones((2))
 
+    def render(self) -> np.ndarray:
+        _, _, rgbaImg, _, _ = self.env.getCameraImage(
+            width=1280,
+            height=720,
+            viewMatrix=self.env.drones[0].camera.view_mat,
+            projectionMatrix=self.env.drones[0].camera.proj_mat,
+        )
+
+        rgbaImg = np.asarray(rgbaImg).reshape(
+        720, 1280, -1
+        )
+
+        return rgbaImg
+
+
     @staticmethod
     def compute_rotation_forward(orn: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         """Computes the rotation matrix and forward vector of an aircraft given its orientation.
@@ -345,3 +365,4 @@ class DogfightEnv:
 
         # order of operations for multiplication matters here
         return rz @ ry @ rx, forward_vector
+
