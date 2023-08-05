@@ -41,15 +41,16 @@ class DogfightEnv:
             )
 
         """SPACES"""
-        state_shape = 13  # 12 states + health
-        action_shape = 4  # roll, pitch, yaw, thrust
-        self.observation_space = spaces.Box(
-            low=-np.inf, high=np.inf, shape=(2 * state_shape + action_shape,)
-        )
-
         high = np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
         low = np.array([-1.0, -1.0, -1.0, -1.0, -1.0, 0.0])
         self.action_space = spaces.Box(low=low, high=high, dtype=np.float64)
+
+        state_shape = 13  # 12 states + health
+        self.observation_space = spaces.Box(
+            low=-np.inf,
+            high=np.inf,
+            shape=(2 * state_shape + self.action_space.shape[0],),
+        )
 
         """CONSTANTS"""
         self.env: Aviary
