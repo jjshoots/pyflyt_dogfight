@@ -21,6 +21,7 @@ class DogfightEnv:
         lethal_distance: float = 15.0,
         lethal_angle_radian: float = 0.2,
         lethal_offset: float = 0.15,
+        assisted_flight: bool = False,
         render: bool = False,
     ):
         """__init__.
@@ -29,8 +30,12 @@ class DogfightEnv:
             flight_dome_size (float): flight_dome_size
             max_duration_seconds (float): max_duration_seconds
             agent_hz (int): agent_hz
+            damage_per_hit (float): damage_per_hit
+            spawn_height (float): spawn_height
+            lethal_distance (float): lethal_distance
             lethal_angle_radian (float): the width of the weapons engagement cone
             lethal_offset (float): how close must the nose of the aircraft be to the opponents body to be considered a hit
+            assisted_flight (bool): whether to fly using RPYT controls or manual control of all actuators
             render (bool): whether to render the environment
         """
         if 120 % agent_hz != 0:
@@ -41,8 +46,9 @@ class DogfightEnv:
             )
 
         """SPACES"""
-        high = np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
-        low = np.array([-1.0, -1.0, -1.0, -1.0, -1.0, 0.0])
+        high = np.ones(4 if assisted_flight else 6)
+        low = high * -1.0
+        low[-1] = 0.0
         self.action_space = spaces.Box(low=low, high=high, dtype=np.float64)
 
         state_shape = 13  # 12 states + health
@@ -56,18 +62,19 @@ class DogfightEnv:
         self.env: Aviary
         self.num_drones = 2
         self.to_render = render
-        self.max_steps = int(agent_hz * max_duration_seconds)
+        self.max_steps = int(agent_hz * max_duration_seconds) if not render else np.inf
         self.env_step_ratio = int(120 / agent_hz)
         self.flight_dome_size = flight_dome_size
         self.aggressor_filepath = path.join(path.dirname(__file__), "./models")
 
+        self.assisted_flight = assisted_flight
         self.damage_per_hit = damage_per_hit
         self.spawn_height = spawn_height
         self.lethal_distance = lethal_distance
         self.lethal_angle = lethal_angle_radian
         self.lethal_offset = lethal_offset
 
-    def reset(self) -> tuple[np.ndarray, dict()]:
+    def reset(self) -> tuple[np.ndarray, dict]:
         """Resets the environment
 
         Args:
@@ -143,7 +150,7 @@ class DogfightEnv:
 
         # set flight mode and register all bodies
         self.env.register_all_new_bodies()
-        self.env.set_mode(-1)
+        self.env.set_mode(0 if self.assisted_flight else -1)
 
         # wait for env to stabilize
         for _ in range(3):
