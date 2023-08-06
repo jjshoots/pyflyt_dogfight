@@ -1,9 +1,9 @@
 # PyFlyt Dogfight
 
-![](./dogfight.gif)
-
 This is a single file reinforcement learning environment for training AI agents to perform aerial dogfighting within PyFlyt.
 The aircraft itself uses the same number of control surfaces as the default PyFlyt fixedwing aircraft, but is modified to provide much higher maneuverability.
+
+![](./dogfight.gif)
 
 ## Environment Rules
 
