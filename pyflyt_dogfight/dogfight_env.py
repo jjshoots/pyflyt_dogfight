@@ -306,10 +306,10 @@ class DogfightEnv:
         self.reward -= engagement_reward[::-1]
 
         # reward for hits
-        self.reward += 5.0 * self.hits
+        self.reward += 10.0 * self.hits
 
         # penalty for being hit
-        self.reward -= 5.0 * self.hits[::-1]
+        self.reward -= 10.0 * self.hits[::-1]
 
         # penalty for crashing
         self.reward -= 3000.0 * collisions
