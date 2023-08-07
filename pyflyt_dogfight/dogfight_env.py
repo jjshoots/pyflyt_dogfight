@@ -13,25 +13,25 @@ class DogfightEnv:
 
     def __init__(
         self,
-        flight_dome_size: float = 100.0,
+        spawn_height: float = 100.0,
+        flight_dome_size: float = 150.0,
         max_duration_seconds: float = 60.0,
         agent_hz: int = 30,
         damage_per_hit: float = 0.02,
-        spawn_height: float = 20.0,
         lethal_distance: float = 15.0,
         lethal_angle_radian: float = 0.2,
         lethal_offset: float = 0.15,
-        assisted_flight: bool = False,
+        assisted_flight: bool = True,
         render: bool = False,
     ):
         """__init__.
 
         Args:
+            spawn_height (float): spawn_height
             flight_dome_size (float): flight_dome_size
             max_duration_seconds (float): max_duration_seconds
             agent_hz (int): agent_hz
             damage_per_hit (float): damage_per_hit
-            spawn_height (float): spawn_height
             lethal_distance (float): lethal_distance
             lethal_angle_radian (float): the width of the weapons engagement cone
             lethal_offset (float): how close must the nose of the aircraft be to the opponents body to be considered a hit
