@@ -285,24 +285,27 @@ class DogfightEnv:
         # truncation is just end
         self.truncation |= self.step_count > self.max_steps
 
-        # whether we're in the lethal range
+        # whether we're in the lethal range and chasing
         is_lethal = self.current_distance < self.lethal_distance
+        is_chaser = np.abs(self.current_angles) < (np.pi / 2.0)
 
         # reward for progressing to engagement
+        # only valid when not in lethal range
+        # and only valid when you're the chaser
         self.reward += (
             np.clip(
                 self.previous_distance - self.current_distance, a_min=0.0, a_max=None
             )
             * (~is_lethal)
-            * 1.0
+            * is_chaser
+            * 2.0
         )
         self.reward += (self.previous_angles - self.current_angles) * is_lethal * 10.0
         self.reward += (self.previous_offsets - self.current_offsets) * is_lethal * 10.0
 
         # reward for engaging the enemy
-        engagement_reward = 1.0 / (self.current_angles + 0.05) * is_lethal
-        engagement_reward += 1.0 / (self.current_offsets + 0.05) * is_lethal
-        self.reward += engagement_reward
+        self.reward += 1.0 / (self.current_angles + 0.05) * is_lethal
+        self.reward += 1.0 / (self.current_offsets + 0.05) * is_lethal
 
         # reward for hits
         self.reward += 10.0 * self.hits
