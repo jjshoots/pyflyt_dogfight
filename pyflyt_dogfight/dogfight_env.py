@@ -298,7 +298,7 @@ class DogfightEnv:
             )
             * (~is_lethal)
             * is_chaser
-            * 2.0
+            * 1.0
         )
         self.reward += (self.previous_angles - self.current_angles) * is_lethal * 10.0
         self.reward += (self.previous_offsets - self.current_offsets) * is_lethal * 10.0

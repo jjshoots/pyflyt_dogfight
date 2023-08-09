@@ -18,13 +18,6 @@ env = Aviary(
     drone_options=drone_options,
 )
 
-step = 0
+env.set_setpoint(0, np.array([0.0, -1.0, 0.1, 1.0]))
 while True:
     env.step()
-
-    if step < 100:
-        env.set_setpoint(0, np.array([0.0, 0.0, 0.0, 1.0]))
-    else:
-        env.set_setpoint(0, np.array([0.0, -1.0, 0.0, 1.0]))
-
-    step += 1
