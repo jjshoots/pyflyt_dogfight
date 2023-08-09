@@ -13,7 +13,7 @@ class DogfightEnv:
 
     def __init__(
         self,
-        spawn_height: float = 100.0,
+        spawn_height: float = 15.0,
         flight_dome_size: float = 150.0,
         max_duration_seconds: float = 60.0,
         agent_hz: int = 30,
