@@ -234,10 +234,12 @@ class DogfightEnv:
         # whether we're lethal or chasing or have opponent in cone
         in_cone = self.current_offsets < self.lethal_offset
         self.in_range = self.current_distance < self.lethal_distance
-        self.chasing = self.current_angles < (np.pi / 3.0)
+        self.chasing = np.abs(self.current_angles) < (np.pi / 2.0)
 
         # compute whether anyone hit anyone
         self.current_hits = in_cone & self.in_range & self.chasing
+        if self.current_hits.any():
+            print("HITTTTTT")
 
         # update health based on hits
         self.health -= self.damage_per_hit * self.current_hits[::-1]
