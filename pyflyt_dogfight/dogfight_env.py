@@ -300,8 +300,8 @@ class DogfightEnv:
             * is_chaser
             * 1.0
         )
-        self.reward += (self.previous_angles - self.current_angles) * is_lethal * 10.0
-        self.reward += (self.previous_offsets - self.current_offsets) * is_lethal * 10.0
+        self.reward += (self.previous_angles - self.current_angles) * is_lethal * 3.0
+        self.reward += (self.previous_offsets - self.current_offsets) * is_lethal * 3.0
 
         # reward for engaging the enemy
         self.reward += 1.0 / (self.current_angles + 0.05) * is_lethal
