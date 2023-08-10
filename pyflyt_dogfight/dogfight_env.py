@@ -19,8 +19,7 @@ class DogfightEnv:
         agent_hz: int = 30,
         damage_per_hit: float = 0.02,
         lethal_distance: float = 15.0,
-        lethal_angle_radian: float = 0.2,
-        lethal_offset: float = 0.15,
+        lethal_offset: float = 0.3,
         assisted_flight: bool = True,
         render: bool = False,
     ):
@@ -33,7 +32,6 @@ class DogfightEnv:
             agent_hz (int): agent_hz
             damage_per_hit (float): damage_per_hit
             lethal_distance (float): lethal_distance
-            lethal_angle_radian (float): the width of the weapons engagement cone
             lethal_offset (float): how close must the nose of the aircraft be to the opponents body to be considered a hit
             assisted_flight (bool): whether to fly using RPYT controls or manual control of all actuators
             render (bool): whether to render the environment
@@ -71,7 +69,6 @@ class DogfightEnv:
         self.damage_per_hit = damage_per_hit
         self.spawn_height = spawn_height
         self.lethal_distance = lethal_distance
-        self.lethal_angle = lethal_angle_radian
         self.lethal_offset = lethal_offset
 
     def reset(self) -> tuple[np.ndarray, dict]:
@@ -102,13 +99,14 @@ class DogfightEnv:
 
         # reset runtime parameters
         self.health = np.ones((2))
+        self.current_hits = np.zeros((2), dtype=bool)
         self.current_angles = np.zeros((2))
         self.current_offsets = np.zeros((2))
         self.current_distance = np.zeros((2))
+        self.previous_hits = np.zeros((2), dtype=bool)
         self.previous_angles = np.zeros((2))
         self.previous_offsets = np.zeros((2))
         self.previous_distance = np.zeros((2))
-        self.hits = np.zeros((2), dtype=bool)
 
         # randomize starting position and orientation
         # constantly regenerate starting position if they are too close
@@ -189,6 +187,18 @@ class DogfightEnv:
         # increment step count
         self.step_count += 1
 
+        # colour the gunsights conditionally
+        if self.render and not np.all(self.previous_hits == self.current_hits):
+            self.previous_hits = self.current_hits.copy()
+            hit_colour = np.array([1.0, 0.0, 0.0, 0.2])
+            norm_colour = np.array([0.0, 0.0, 0.0, 0.2])
+            for i in range(2):
+                self.env.changeVisualShape(
+                    self.env.drones[i].Id,
+                    7,
+                    rgbaColor=(hit_colour if self.current_hits[i] else norm_colour),
+                )
+
         return self.state, self.reward, self.termination, self.truncation, self.info
 
     def compute_state(self):
@@ -220,12 +230,11 @@ class DogfightEnv:
         )
 
         # compute whether anyone hit anyone
-        self.hits = self.current_angles < self.lethal_angle
-        self.hits &= self.current_offsets < self.lethal_offset
-        self.hits &= self.current_distance < self.lethal_distance
+        self.current_hits = self.current_offsets < self.lethal_offset
+        self.current_hits &= self.current_distance < self.lethal_distance
 
         # update health based on hits
-        self.health -= self.damage_per_hit * self.hits[::-1]
+        self.health -= self.damage_per_hit * self.current_hits[::-1]
 
         """COMPUTE THE STATE VECTOR"""
         # form the opponent state matrix
@@ -285,9 +294,8 @@ class DogfightEnv:
         # truncation is just end
         self.truncation |= self.step_count > self.max_steps
 
-        # whether we're in the lethal range and chasing
+        # whether we're in the lethal range
         is_lethal = self.current_distance < self.lethal_distance
-        is_chaser = np.abs(self.current_angles) < (np.pi / 2.0)
 
         # reward for progressing to engagement
         # only valid when not in lethal range
@@ -296,22 +304,20 @@ class DogfightEnv:
             np.clip(
                 self.previous_distance - self.current_distance, a_min=0.0, a_max=None
             )
+            * (np.abs(self.current_angles) < (np.pi / 2.0))
             * (~is_lethal)
-            * is_chaser
             * 1.0
         )
-        self.reward += (self.previous_angles - self.current_angles) * is_lethal * 3.0
         self.reward += (self.previous_offsets - self.current_offsets) * is_lethal * 3.0
 
         # reward for engaging the enemy
-        self.reward += 1.0 / (self.current_angles + 0.05) * is_lethal
         self.reward += 1.0 / (self.current_offsets + 0.05) * is_lethal
 
         # reward for hits
-        self.reward += 10.0 * self.hits
+        self.reward += 10.0 * self.current_hits
 
         # penalty for being hit
-        self.reward -= 10.0 * self.hits[::-1]
+        self.reward -= 10.0 * self.current_hits[::-1]
 
         # penalty for crashing
         self.reward -= 3000.0 * collisions

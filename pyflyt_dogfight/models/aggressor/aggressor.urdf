@@ -2,8 +2,8 @@
 
 <robot name="aggressor">
 
-  <material name="redclear">
-    <color rgba="1.0 0.0 0.0 0.2"/>
+  <material name="clear">
+    <color rgba="0.0 0.0 0.0 0.2"/>
   </material>
   <material name="red">
     <color rgba="1.0 0.0 0.0 1.0"/>
@@ -203,7 +203,7 @@
       <geometry>
         <cylinder radius="0.3" length="15.0"/>
       </geometry>
-      <material name="redclear"/>
+      <material name="clear"/>
     </visual>
   </link>
   <joint name="gunsight_joint" type="fixed">
