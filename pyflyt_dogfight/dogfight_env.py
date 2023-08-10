@@ -99,6 +99,8 @@ class DogfightEnv:
 
         # reset runtime parameters
         self.health = np.ones((2))
+        self.in_range = np.zeros((2,), dtype=bool)
+        self.chasing = np.zeros((2,), dtype=bool)
         self.current_hits = np.zeros((2), dtype=bool)
         self.current_angles = np.zeros((2))
         self.current_offsets = np.zeros((2))
@@ -229,9 +231,13 @@ class DogfightEnv:
             np_cross(separation, forward_vecs), axis=-1
         )
 
+        # whether we're lethal or chasing or have opponent in cone
+        in_cone = self.current_offsets < self.lethal_offset
+        self.in_range = self.current_distance < self.lethal_distance
+        self.chasing = self.current_angles < (np.pi / 3.0)
+
         # compute whether anyone hit anyone
-        self.current_hits = self.current_offsets < self.lethal_offset
-        self.current_hits &= self.current_distance < self.lethal_distance
+        self.current_hits = in_cone & self.in_range & self.chasing
 
         # update health based on hits
         self.health -= self.damage_per_hit * self.current_hits[::-1]
@@ -294,24 +300,25 @@ class DogfightEnv:
         # truncation is just end
         self.truncation |= self.step_count > self.max_steps
 
-        # whether we're in the lethal range
-        is_lethal = self.current_distance < self.lethal_distance
-
         # reward for progressing to engagement
-        # only valid when not in lethal range
-        # and only valid when you're the chaser
+        # only valid when not in range and chasing
         self.reward += (
             np.clip(
                 self.previous_distance - self.current_distance, a_min=0.0, a_max=None
             )
-            * (np.abs(self.current_angles) < (np.pi / 2.0))
-            * (~is_lethal)
+            * (~self.in_range & self.chasing)
             * 1.0
         )
-        self.reward += (self.previous_offsets - self.current_offsets) * is_lethal * 3.0
+        self.reward += (
+            (self.previous_offsets - self.current_offsets)
+            * (self.in_range & self.chasing)
+            * 3.0
+        )
 
         # reward for engaging the enemy
-        self.reward += 1.0 / (self.current_offsets + 0.05) * is_lethal
+        self.reward += (
+            1.0 / (self.current_offsets + 0.05) * (self.in_range & self.chasing)
+        )
 
         # reward for hits
         self.reward += 10.0 * self.current_hits
