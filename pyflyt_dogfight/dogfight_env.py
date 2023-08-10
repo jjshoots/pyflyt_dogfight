@@ -22,6 +22,7 @@ class DogfightEnv:
         lethal_offset: float = 0.3,
         assisted_flight: bool = True,
         render: bool = False,
+        human_camera: bool = True,
     ):
         """__init__.
 
@@ -35,6 +36,7 @@ class DogfightEnv:
             lethal_offset (float): how close must the nose of the aircraft be to the opponents body to be considered a hit
             assisted_flight (bool): whether to fly using RPYT controls or manual control of all actuators
             render (bool): whether to render the environment
+            human_camera (bool): to allow the image from `render` to be available without the PyBullet display
         """
         if 120 % agent_hz != 0:
             lowest = int(120 / (int(120 / agent_hz) + 1))
@@ -60,6 +62,7 @@ class DogfightEnv:
         self.env: Aviary
         self.num_drones = 2
         self.to_render = render
+        self.human_camera = human_camera
         self.max_steps = int(agent_hz * max_duration_seconds) if not render else np.inf
         self.env_step_ratio = int(120 / agent_hz)
         self.flight_dome_size = flight_dome_size
@@ -133,7 +136,7 @@ class DogfightEnv:
             drone_options[i]["model_dir"] = self.aggressor_filepath
             drone_options[i]["drone_model"] = "aggressor"
             drone_options[i]["starting_velocity"] = start_vec[i]
-        drone_options[0]["use_camera"] = self.to_render
+        drone_options[0]["use_camera"] = self.human_camera or self.to_render
 
         # start the environment
         self.env = Aviary(
@@ -238,8 +241,6 @@ class DogfightEnv:
 
         # compute whether anyone hit anyone
         self.current_hits = in_cone & self.in_range & self.chasing
-        if self.current_hits.any():
-            print("HITTTTTT")
 
         # update health based on hits
         self.health -= self.damage_per_hit * self.current_hits[::-1]
@@ -342,13 +343,13 @@ class DogfightEnv:
 
     def render(self) -> np.ndarray:
         _, _, rgbaImg, _, _ = self.env.getCameraImage(
-            width=1280,
-            height=720,
+            width=320,
+            height=240,
             viewMatrix=self.env.drones[0].camera.view_mat,
             projectionMatrix=self.env.drones[0].camera.proj_mat,
         )
 
-        rgbaImg = np.asarray(rgbaImg).reshape(720, 1280, -1)
+        rgbaImg = np.asarray(rgbaImg).reshape(240, 320, -1)
 
         return rgbaImg
 
