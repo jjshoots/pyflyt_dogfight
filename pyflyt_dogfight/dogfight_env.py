@@ -137,6 +137,7 @@ class DogfightEnv:
             drone_options[i]["drone_model"] = "aggressor"
             drone_options[i]["starting_velocity"] = start_vec[i]
         drone_options[0]["use_camera"] = self.human_camera or self.to_render
+        drone_options[0]["camera_resolution"] = np.array([240, 320])
 
         # start the environment
         self.env = Aviary(
@@ -342,16 +343,7 @@ class DogfightEnv:
         self.info["healths"] = self.health
 
     def render(self) -> np.ndarray:
-        _, _, rgbaImg, _, _ = self.env.getCameraImage(
-            width=320,
-            height=240,
-            viewMatrix=self.env.drones[0].camera.view_mat,
-            projectionMatrix=self.env.drones[0].camera.proj_mat,
-        )
-
-        rgbaImg = np.asarray(rgbaImg).reshape(240, 320, -1)
-
-        return rgbaImg
+        return self.env.drones[0].rgbaImg
 
     @staticmethod
     def compute_rotation_forward(orn: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
