@@ -19,7 +19,7 @@ class DogfightEnv:
         agent_hz: int = 30,
         damage_per_hit: float = 0.02,
         lethal_distance: float = 15.0,
-        lethal_offset: float = 0.3,
+        lethal_angle_radians: float = 0.1,
         assisted_flight: bool = True,
         render: bool = False,
         human_camera: bool = True,
@@ -33,7 +33,7 @@ class DogfightEnv:
             agent_hz (int): agent_hz
             damage_per_hit (float): damage_per_hit
             lethal_distance (float): lethal_distance
-            lethal_offset (float): how close must the nose of the aircraft be to the opponents body to be considered a hit
+            lethal_angle_radians (float): how close must the nose of the aircraft be to the opponents body to be considered a hit
             assisted_flight (bool): whether to fly using RPYT controls or manual control of all actuators
             render (bool): whether to render the environment
             human_camera (bool): to allow the image from `render` to be available without the PyBullet display
@@ -72,7 +72,7 @@ class DogfightEnv:
         self.damage_per_hit = damage_per_hit
         self.spawn_height = spawn_height
         self.lethal_distance = lethal_distance
-        self.lethal_offset = lethal_offset
+        self.lethal_angle = lethal_angle_radians
 
     def reset(self) -> tuple[np.ndarray, dict]:
         """Resets the environment
@@ -102,6 +102,7 @@ class DogfightEnv:
 
         # reset runtime parameters
         self.health = np.ones((2))
+        self.in_cone = np.zeros((2,), dtype=bool)
         self.in_range = np.zeros((2,), dtype=bool)
         self.chasing = np.zeros((2,), dtype=bool)
         self.current_hits = np.zeros((2), dtype=bool)
@@ -236,12 +237,12 @@ class DogfightEnv:
         )
 
         # whether we're lethal or chasing or have opponent in cone
-        in_cone = self.current_offsets < self.lethal_offset
+        self.in_cone = self.current_angles < self.lethal_angle
         self.in_range = self.current_distance < self.lethal_distance
         self.chasing = np.abs(self.current_angles) < (np.pi / 2.0)
 
         # compute whether anyone hit anyone
-        self.current_hits = in_cone & self.in_range & self.chasing
+        self.current_hits = self.in_cone & self.in_range & self.chasing
 
         # update health based on hits
         self.health -= self.damage_per_hit * self.current_hits[::-1]
@@ -304,8 +305,7 @@ class DogfightEnv:
         # truncation is just end
         self.truncation |= self.step_count > self.max_steps
 
-        # reward for progressing to engagement
-        # only valid when not in range and chasing
+        # reward for closing the distance
         self.reward += (
             np.clip(
                 self.previous_distance - self.current_distance, a_min=0.0, a_max=None
@@ -313,16 +313,14 @@ class DogfightEnv:
             * (~self.in_range & self.chasing)
             * 1.0
         )
+
+        # reward for progressing to engagement
         self.reward += (
-            (self.previous_offsets - self.current_offsets)
-            * (self.in_range & self.chasing)
-            * 10.0
+            (self.previous_angles - self.current_angles) * self.in_range * 10.0
         )
 
         # reward for engaging the enemy
-        self.reward += (
-            2.0 / (self.current_offsets + 0.1) * (self.in_range & self.chasing)
-        )
+        self.reward += 2.0 / (self.current_angles + 0.1) * self.in_range
 
         # reward for hits
         self.reward += 20.0 * self.current_hits
