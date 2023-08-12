@@ -320,10 +320,10 @@ class DogfightEnv:
         )
 
         # reward for engaging the enemy
-        self.reward += 2.0 / (self.current_angles + 0.1) * self.in_range
+        self.reward += 3.0 / (self.current_angles + 0.1) * self.in_range
 
         # reward for hits
-        self.reward += 20.0 * self.current_hits
+        self.reward += 30.0 * self.current_hits
 
         # penalty for being hit
         self.reward -= 20.0 * self.current_hits[::-1]
